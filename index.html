@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Trophy, FastForward, Eye, RefreshCw, PartyPopper, Timer, AlertCircle, Volume2, VolumeX, Music, ChevronRight, Lightbulb } from 'lucide-react';
+import { 
+  Trophy, 
+  Eye, 
+  PartyPopper, 
+  Volume2, 
+  VolumeX, 
+  Music, 
+  ChevronRight, 
+  Lightbulb,
+  Gamepad2
+} from 'lucide-react';
 
+// 遊戲題目設定
 const QUIZ_DATA = [
   { emojis: "🦁👑", answer: "獅子王", category: "電影" },
   { emojis: "🍎🏢", answer: "蘋果公司 (Apple)", category: "品牌" },
@@ -9,7 +20,7 @@ const QUIZ_DATA = [
   { emojis: "❄️🏰👸", answer: "冰雪奇緣", category: "電影" },
   { emojis: "🦶🏀", answer: "足球", category: "運動" },
   { emojis: "👨‍🍳🐀", answer: "料理鼠王", category: "電影" },
-  { emojis: "🏹🍎", answer: "射蘋果 (威廉·泰爾)", category: "歷史/傳說" },
+  { emojis: "🏹🍎", answer: "威廉·泰爾", category: "歷史/傳說" },
   { emojis: "🐝🎬", answer: "蜂電影", category: "電影" },
   { emojis: "🧧💰🧧", answer: "恭喜發財 / 紅包拿來", category: "尾牙必備" },
   { emojis: "👻🐚", answer: "攻殼機動隊", category: "動漫/電影" },
@@ -21,17 +32,26 @@ const QUIZ_DATA = [
 
 const BGM_URL = "https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3";
 
+/**
+ * 輔助組件：安全圖標渲染
+ */
+const SafeIcon = ({ icon: Icon, ...props }) => {
+  if (!Icon) return null;
+  return <Icon {...props} />;
+};
+
 const App = () => {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(10);
   const [showAnswer, setShowAnswer] = useState(false);
-  const [gameState, setGameState] = useState('start');
+  const [gameState, setGameState] = useState('start'); // start, playing, end
   const [isMuted, setIsMuted] = useState(false);
   const [audioStatus, setAudioStatus] = useState('loading');
   
   const audioRef = useRef(null);
   const currentQuestion = QUIZ_DATA[currentIdx];
 
+  // 音訊初始化
   useEffect(() => {
     const audio = new Audio(BGM_URL);
     audio.loop = true;
@@ -48,16 +68,21 @@ const App = () => {
     };
   }, []);
 
+  // 音訊播放邏輯
   useEffect(() => {
     if (!audioRef.current) return;
     const shouldPlay = gameState === 'playing' && timeLeft > 0 && !showAnswer && !isMuted;
     if (shouldPlay) {
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(() => {
+        // 處理瀏覽器自動播放限制
+        console.log("Waiting for user interaction to play audio");
+      });
     } else {
       audioRef.current.pause();
     }
   }, [gameState, timeLeft, showAnswer, isMuted]);
 
+  // 計時器邏輯
   useEffect(() => {
     let timer;
     if (gameState === 'playing' && timeLeft > 0 && !showAnswer) {
@@ -102,7 +127,8 @@ const App = () => {
   const progressPercentage = (timeLeft / 10) * 100;
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white font-sans flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0f172a] text-white font-sans flex flex-col items-center justify-center p-4 selection:bg-yellow-400 selection:text-slate-900">
+      {/* 背景裝飾光暈 */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
         <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600 rounded-full blur-[150px]"></div>
         <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-600 rounded-full blur-[150px]"></div>
@@ -110,50 +136,54 @@ const App = () => {
 
       <div className="z-10 w-full max-w-6xl bg-[#1e293b]/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
         
-        {/* 頂部標題 */}
+        {/* 頂部控制欄 */}
         <div className="bg-[#334155] p-5 flex items-center justify-between px-8 border-b border-white/5">
           <div className="flex items-center gap-4">
             <div className="bg-yellow-400 p-1.5 rounded-lg shadow-lg">
-              <PartyPopper className="w-6 h-6 text-slate-900" />
+              <SafeIcon icon={PartyPopper} className="w-6 h-6 text-slate-900" />
             </div>
-            <h1 className="text-xl font-black tracking-tight text-white">尾牙 EMOJI 大挑戰</h1>
+            <h1 className="text-xl font-black tracking-tight text-white">2026 尾牙 EMOJI 大挑戰</h1>
           </div>
           
           <button 
             onClick={toggleMute}
             className={`flex items-center gap-2 p-2.5 rounded-xl transition-all ${isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
           >
-            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-            <span className="text-[10px] font-bold hidden md:block uppercase tracking-tighter">{isMuted ? "靜音模式" : "音效開啟"}</span>
+            <SafeIcon icon={isMuted ? VolumeX : Volume2} className="w-5 h-5" />
+            <span className="text-[10px] font-bold hidden md:block uppercase tracking-tighter">
+              {isMuted ? "靜音模式" : "音效開啟"}
+            </span>
           </button>
         </div>
 
         <div className="p-6 md:p-8">
+          {/* 開始畫面 */}
           {gameState === 'start' && (
-            <div className="text-center py-24 flex flex-col items-center">
-              <div className="text-[10rem] mb-12 animate-pulse drop-shadow-[0_0_40px_rgba(250,204,21,0.5)]">🎁</div>
-              <h2 className="text-3xl font-black mb-10 text-white tracking-tight">準備好拿大獎了嗎？</h2>
+            <div className="text-center py-24 flex flex-col items-center animate-in fade-in duration-1000">
+              <div className="text-[10rem] mb-12 animate-bounce drop-shadow-[0_0_40px_rgba(250,204,21,0.5)]">🎁</div>
+              <h2 className="text-4xl font-black mb-10 text-white tracking-tight">準備好拿大獎了嗎？</h2>
               <button 
                 onClick={startGame}
                 className="group relative bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-14 py-6 rounded-[2rem] text-2xl font-black transition-all transform hover:scale-105 shadow-xl active:scale-95 flex items-center gap-4"
               >
-                <Music className={`w-7 h-7 ${audioStatus === 'ready' ? 'animate-spin' : ''}`} />
-                點擊開始
+                <SafeIcon icon={Gamepad2} className={`w-7 h-7 ${audioStatus === 'ready' ? 'animate-pulse' : ''}`} />
+                點擊開始挑戰
               </button>
             </div>
           )}
 
+          {/* 遊戲進行中 */}
           {gameState === 'playing' && (
             <div className="flex flex-col lg:flex-row gap-6 items-stretch">
               
-              {/* 左側：題目區域 (加大顯示位置) */}
+              {/* 左側：大題目區域 */}
               <div className="flex-[3] min-w-0">
                 <div className="bg-[#0f172a] rounded-[2.5rem] p-8 text-center border border-white/10 h-[520px] flex flex-col items-center justify-center relative shadow-2xl group overflow-hidden">
                   
-                  {/* 分類提示：更清楚的設計 */}
+                  {/* 分類提示 */}
                   <div className="absolute top-6 left-6 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-1.5 rounded-xl shadow-lg border border-blue-400/30">
-                    <Lightbulb className="w-4 h-4 text-yellow-300 animate-pulse" />
-                    <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest opacity-80">分類提示：</span>
+                    <SafeIcon icon={Lightbulb} className="w-4 h-4 text-yellow-300 animate-pulse" />
+                    <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest opacity-80">提示：</span>
                     <span className="text-sm font-black text-white">
                       {currentQuestion.category}
                     </span>
@@ -161,12 +191,12 @@ const App = () => {
 
                   {/* 題目 Emoji */}
                   <div className="w-full flex items-center justify-center py-4">
-                    <div className="text-[clamp(5rem,18vw,13rem)] leading-none select-none transition-all duration-700 group-hover:scale-110 drop-shadow-[0_25px_40px_rgba(0,0,0,0.8)] whitespace-nowrap inline-block">
+                    <div className="text-[clamp(4rem,15vw,11rem)] leading-none select-none transition-all duration-700 group-hover:scale-110 drop-shadow-[0_25px_40px_rgba(0,0,0,0.8)] whitespace-nowrap inline-block">
                       {currentQuestion.emojis}
                     </div>
                   </div>
                   
-                  {/* 答案顯示 */}
+                  {/* 答案顯示區 */}
                   <div className="h-28 flex items-center justify-center w-full mt-4">
                     {showAnswer && (
                       <div className="animate-in fade-in zoom-in slide-in-from-bottom-6 duration-700 text-center">
@@ -180,8 +210,8 @@ const App = () => {
                 </div>
               </div>
 
-              {/* 右側：主控區 (縮小並精簡按鈕) */}
-              <div className="lg:w-64 flex flex-col gap-4">
+              {/* 右側：主控區 */}
+              <div className="lg:w-72 flex flex-col gap-4">
                 
                 {/* 倒數計時卡片 */}
                 <div className="bg-[#334155]/80 rounded-[2rem] p-5 border border-white/5 shadow-lg">
@@ -197,6 +227,7 @@ const App = () => {
                     </div>
                   </div>
                   
+                  {/* 進度條 */}
                   <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/5 shadow-inner">
                     <div 
                       className={`h-full rounded-full transition-all duration-1000 ease-linear ${
@@ -207,47 +238,53 @@ const App = () => {
                   </div>
                 </div>
 
-                {/* 揭曉按鈕 */}
-                {!showAnswer ? (
+                {/* 動作按鈕 */}
+                <div className="flex-1 flex flex-col gap-4">
+                  {!showAnswer ? (
+                    <button 
+                      onClick={revealAnswer}
+                      className={`flex-1 flex flex-col items-center justify-center gap-3 p-5 rounded-[2rem] transition-all transform hover:scale-[1.02] active:scale-95 border-2 border-dashed shadow-xl ${
+                        timeLeft === 0 
+                        ? 'border-red-500 bg-red-500/10 text-red-500 animate-bounce' 
+                        : 'border-slate-500 hover:border-yellow-400 text-slate-400 hover:text-yellow-400 bg-slate-800/40'
+                      }`}
+                    >
+                      <SafeIcon icon={Eye} className="w-12 h-12" />
+                      <span className="font-black tracking-widest text-lg uppercase italic">揭曉答案</span>
+                    </button>
+                  ) : (
+                    <div className="flex-1 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-[2rem] flex flex-col items-center justify-center p-6 animate-in zoom-in duration-300 shadow-lg border-b-[6px] border-yellow-700">
+                      <SafeIcon icon={PartyPopper} className="w-16 h-16 text-slate-900 animate-bounce" />
+                      <span className="text-slate-900 font-black text-[10px] tracking-tighter uppercase mt-1">Ready for next?</span>
+                    </div>
+                  )}
+
                   <button 
-                    onClick={revealAnswer}
-                    className={`flex-1 flex flex-col items-center justify-center gap-3 p-5 rounded-[2rem] transition-all transform hover:scale-[1.02] active:scale-95 border-2 border-dashed shadow-xl ${
-                      timeLeft === 0 
-                      ? 'border-red-500 bg-red-500/10 text-red-500 animate-bounce' 
-                      : 'border-slate-500 hover:border-yellow-400 text-slate-400 hover:text-yellow-400 bg-slate-800/40'
+                    onClick={handleNext}
+                    disabled={!showAnswer && timeLeft > 0}
+                    className={`p-6 rounded-[2rem] font-black text-xl transition-all transform flex items-center justify-center gap-2 shadow-lg border-b-[6px] active:border-b-0 active:translate-y-1 ${
+                      showAnswer || timeLeft === 0
+                      ? 'bg-white hover:bg-yellow-50 text-slate-900 border-slate-300'
+                      : 'bg-slate-700 text-slate-500 border-slate-800 cursor-not-allowed'
                     }`}
                   >
-                    <Eye className="w-10 h-10 transition-transform group-hover:scale-110" />
-                    <span className="font-black tracking-widest text-lg uppercase italic">揭曉答案</span>
+                    {currentIdx === QUIZ_DATA.length - 1 ? "遊戲結束" : "下一題"}
+                    <SafeIcon icon={ChevronRight} className="w-6 h-6" />
                   </button>
-                ) : (
-                  <div className="flex-1 bg-yellow-400 rounded-[2rem] flex flex-col items-center justify-center p-6 animate-in zoom-in duration-300 shadow-lg">
-                    <PartyPopper className="w-14 h-14 text-slate-900 animate-bounce" />
-                    <span className="text-slate-900 font-black text-[9px] tracking-tighter uppercase mt-1">Confirmed!</span>
-                  </div>
-                )}
-
-                {/* 下一題按鈕 */}
-                <button 
-                  onClick={handleNext}
-                  className="bg-white hover:bg-yellow-50 text-slate-900 p-6 rounded-[2rem] font-black text-xl transition-all transform hover:translate-x-1 active:scale-95 shadow-lg flex items-center justify-center gap-2 border-b-[6px] border-slate-300 active:border-b-0 active:translate-y-1"
-                >
-                  {currentIdx === QUIZ_DATA.length - 1 ? "結束" : "下一題"}
-                  <ChevronRight className="w-6 h-6" />
-                </button>
+                </div>
               </div>
-
             </div>
           )}
 
+          {/* 結算畫面 */}
           {gameState === 'end' && (
             <div className="text-center py-20 animate-in zoom-in duration-700">
-              <Trophy className="w-36 h-36 text-yellow-400 mx-auto drop-shadow-[0_0_30px_rgba(250,204,21,0.5)] mb-6" />
-              <h2 className="text-5xl font-black text-white mb-4 italic">尾牙挑戰圓滿成功！</h2>
-              <p className="text-slate-400 text-xl mb-10 opacity-80">祝大家明年好運龍總來，加薪升官！</p>
+              <SafeIcon icon={Trophy} className="w-40 h-40 text-yellow-400 mx-auto drop-shadow-[0_0_30px_rgba(250,204,21,0.5)] mb-8" />
+              <h2 className="text-5xl font-black text-white mb-4 italic tracking-tighter">尾牙挑戰圓滿成功！</h2>
+              <p className="text-slate-400 text-xl mb-12 opacity-80">祝大家明年運勢如虹，年終拿到手軟！</p>
               <button 
                 onClick={startGame}
-                className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-14 py-5 rounded-[2rem] font-black text-2xl transition-all shadow-xl active:scale-95"
+                className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-16 py-6 rounded-[2.5rem] font-black text-2xl transition-all shadow-xl active:scale-95 transform hover:scale-105"
               >
                 再來一局
               </button>
@@ -257,7 +294,7 @@ const App = () => {
       </div>
 
       <div className="mt-8 text-slate-500 font-bold text-[9px] tracking-[0.4em] uppercase opacity-30 text-center">
-        Emoji Guess Master v2.6 | Optimized Layout | Right-Hand Control
+        Emoji Guess Master Pro v3.0 | 尾牙專用佈局 | Optimized for Performance
       </div>
     </div>
   );
