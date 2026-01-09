@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Trophy, FastForward, Eye, RefreshCw, PartyPopper, Timer, AlertCircle, Volume2, VolumeX, Music, ChevronRight } from 'lucide-react';
+import { Trophy, FastForward, Eye, RefreshCw, PartyPopper, Timer, AlertCircle, Volume2, VolumeX, Music, ChevronRight, Lightbulb } from 'lucide-react';
 
 const QUIZ_DATA = [
   { emojis: "🦁👑", answer: "獅子王", category: "電影" },
@@ -39,6 +39,7 @@ const App = () => {
     audio.oncanplaythrough = () => setAudioStatus('ready');
     audio.onerror = () => setAudioStatus('error');
     audioRef.current = audio;
+
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
@@ -101,112 +102,162 @@ const App = () => {
   const progressPercentage = (timeLeft / 10) * 100;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans flex flex-col items-center justify-center p-4">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-600 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-500 rounded-full blur-[120px]"></div>
+    <div className="min-h-screen bg-[#0f172a] text-white font-sans flex flex-col items-center justify-center p-4">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600 rounded-full blur-[150px]"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-600 rounded-full blur-[150px]"></div>
       </div>
 
-      <div className="z-10 w-full max-w-5xl bg-slate-800/50 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
+      <div className="z-10 w-full max-w-6xl bg-[#1e293b]/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
         
-        <div className="bg-gradient-to-r from-red-600 to-amber-500 p-6 flex items-center justify-between px-10">
-          <div className="flex items-center gap-3">
-            <PartyPopper className="w-8 h-8" />
-            <h1 className="text-2xl md:text-3xl font-black tracking-tighter">尾牙 Emoji 猜謎</h1>
+        {/* 頂部標題 */}
+        <div className="bg-[#334155] p-5 flex items-center justify-between px-8 border-b border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="bg-yellow-400 p-1.5 rounded-lg shadow-lg">
+              <PartyPopper className="w-6 h-6 text-slate-900" />
+            </div>
+            <h1 className="text-xl font-black tracking-tight text-white">尾牙 EMOJI 大挑戰</h1>
           </div>
+          
           <button 
             onClick={toggleMute}
-            className={`p-3 rounded-full transition-all ${isMuted ? 'bg-red-500/20 text-red-200' : 'bg-black/20 text-white hover:bg-black/40'}`}
+            className={`flex items-center gap-2 p-2.5 rounded-xl transition-all ${isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
           >
-            {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            <span className="text-[10px] font-bold hidden md:block uppercase tracking-tighter">{isMuted ? "靜音模式" : "音效開啟"}</span>
           </button>
         </div>
 
-        <div className="p-6 md:p-10">
+        <div className="p-6 md:p-8">
           {gameState === 'start' && (
-            <div className="text-center py-20">
-              <div className="text-9xl mb-10 animate-bounce drop-shadow-2xl">🤔</div>
-              <h2 className="text-3xl font-black mb-8 text-amber-400">準備好接受挑戰了嗎？</h2>
-              <button onClick={startGame} className="group relative bg-red-600 hover:bg-red-500 text-white px-12 py-6 rounded-3xl text-3xl font-black transition-all transform hover:scale-105 shadow-2xl active:scale-95 flex items-center gap-4 mx-auto">
-                <Music className={`w-8 h-8 ${audioStatus === 'ready' ? 'animate-spin' : 'opacity-50'}`} />
-                開始遊戲 (開啟音效)
+            <div className="text-center py-24 flex flex-col items-center">
+              <div className="text-[10rem] mb-12 animate-pulse drop-shadow-[0_0_40px_rgba(250,204,21,0.5)]">🎁</div>
+              <h2 className="text-3xl font-black mb-10 text-white tracking-tight">準備好拿大獎了嗎？</h2>
+              <button 
+                onClick={startGame}
+                className="group relative bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-14 py-6 rounded-[2rem] text-2xl font-black transition-all transform hover:scale-105 shadow-xl active:scale-95 flex items-center gap-4"
+              >
+                <Music className={`w-7 h-7 ${audioStatus === 'ready' ? 'animate-spin' : ''}`} />
+                點擊開始
               </button>
             </div>
           )}
 
           {gameState === 'playing' && (
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex-1 space-y-6 min-w-0">
-                <div className="bg-slate-900/80 rounded-[2rem] p-6 md:p-12 text-center border border-white/5 min-h-[400px] flex flex-col items-center justify-center relative group shadow-inner overflow-hidden">
-                  <div className="absolute top-6 left-8 text-sm uppercase tracking-[0.4em] text-slate-500 font-black bg-slate-800 px-5 py-2 rounded-full border border-white/5 shadow-lg">
-                    {currentQuestion.category}
-                  </div>
+            <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+              
+              {/* 左側：題目區域 (加大顯示位置) */}
+              <div className="flex-[3] min-w-0">
+                <div className="bg-[#0f172a] rounded-[2.5rem] p-8 text-center border border-white/10 h-[520px] flex flex-col items-center justify-center relative shadow-2xl group overflow-hidden">
                   
-                  {/* 核心修正：移除 text-ellipsis 並確保 whitespace-nowrap */}
-                  <div className="w-full flex items-center justify-center overflow-visible px-4">
-                    <div className="text-[clamp(3rem,12vw,10rem)] leading-none select-none transition-all duration-700 group-hover:scale-105 drop-shadow-[0_20px_20px_rgba(0,0,0,0.6)] whitespace-nowrap">
+                  {/* 分類提示：更清楚的設計 */}
+                  <div className="absolute top-6 left-6 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-1.5 rounded-xl shadow-lg border border-blue-400/30">
+                    <Lightbulb className="w-4 h-4 text-yellow-300 animate-pulse" />
+                    <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest opacity-80">分類提示：</span>
+                    <span className="text-sm font-black text-white">
+                      {currentQuestion.category}
+                    </span>
+                  </div>
+
+                  {/* 題目 Emoji */}
+                  <div className="w-full flex items-center justify-center py-4">
+                    <div className="text-[clamp(5rem,18vw,13rem)] leading-none select-none transition-all duration-700 group-hover:scale-110 drop-shadow-[0_25px_40px_rgba(0,0,0,0.8)] whitespace-nowrap inline-block">
                       {currentQuestion.emojis}
                     </div>
                   </div>
                   
-                  {showAnswer && (
-                    <div className="mt-10 animate-in fade-in zoom-in slide-in-from-bottom-8 duration-700 text-center w-full">
-                      <div className="text-slate-500 text-xs font-bold tracking-[0.5em] uppercase mb-2">正確答案揭曉</div>
-                      <div className="text-4xl md:text-6xl font-black text-amber-400 bg-amber-400/10 px-8 md:px-12 py-4 md:py-6 rounded-3xl border border-amber-400/30 inline-block">
-                        {currentQuestion.answer}
+                  {/* 答案顯示 */}
+                  <div className="h-28 flex items-center justify-center w-full mt-4">
+                    {showAnswer && (
+                      <div className="animate-in fade-in zoom-in slide-in-from-bottom-6 duration-700 text-center">
+                        <div className="text-yellow-400 text-[10px] font-black tracking-[0.4em] uppercase mb-1 opacity-70 italic">Correct Answer</div>
+                        <div className="text-6xl font-black text-white bg-gradient-to-t from-yellow-500 to-yellow-100 bg-clip-text text-transparent drop-shadow-md px-8 py-2 border-b-2 border-yellow-500/20">
+                          {currentQuestion.answer}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="md:w-80 flex flex-col gap-6">
-                <div className="bg-slate-700/30 rounded-3xl p-6 border border-white/5 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">第 {currentIdx + 1} 題</span>
-                    <span className={`text-3xl font-mono font-black ${timeLeft === 0 ? 'text-red-500 animate-pulse' : 'text-amber-500'}`}>
-                      {timeLeft}s
-                    </span>
+              {/* 右側：主控區 (縮小並精簡按鈕) */}
+              <div className="lg:w-64 flex flex-col gap-4">
+                
+                {/* 倒數計時卡片 */}
+                <div className="bg-[#334155]/80 rounded-[2rem] p-5 border border-white/5 shadow-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="bg-slate-800 px-3 py-1 rounded-lg">
+                      <span className="text-[9px] text-slate-400 font-bold block leading-none">ROUND</span>
+                      <span className="text-base font-black italic">{currentIdx + 1} / {QUIZ_DATA.length}</span>
+                    </div>
+                    <div className="text-right">
+                       <div className={`text-4xl font-mono font-black ${timeLeft <= 3 ? 'text-red-500 animate-pulse' : 'text-yellow-400'}`}>
+                        {timeLeft}s
+                       </div>
+                    </div>
                   </div>
-                  <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/5">
+                  
+                  <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/5 shadow-inner">
                     <div 
                       className={`h-full rounded-full transition-all duration-1000 ease-linear ${
-                        timeLeft > 5 ? 'bg-green-500' : timeLeft > 0 ? 'bg-amber-500' : 'bg-red-600'
+                        timeLeft > 5 ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : timeLeft > 0 ? 'bg-yellow-400 animate-pulse' : 'bg-red-600'
                       }`}
                       style={{ width: `${progressPercentage}%` }}
                     ></div>
                   </div>
                 </div>
 
+                {/* 揭曉按鈕 */}
                 {!showAnswer ? (
-                  <button onClick={revealAnswer} className={`flex-1 flex flex-col items-center justify-center gap-4 p-8 rounded-3xl transition-all transform hover:scale-[1.02] active:scale-95 group border-4 border-dashed ${timeLeft === 0 ? 'border-red-500 bg-red-500/10 text-red-400 shadow-[0_0_40px_rgba(239,68,68,0.2)]' : 'border-slate-600 hover:border-amber-500 text-slate-500 hover:text-amber-400 bg-slate-800/50'}`}>
-                    <Eye className={`w-12 h-12 transition-transform ${timeLeft === 0 ? 'animate-bounce' : 'group-hover:rotate-12'}`} />
-                    <span className="font-black tracking-widest text-xl uppercase italic">揭曉答案</span>
+                  <button 
+                    onClick={revealAnswer}
+                    className={`flex-1 flex flex-col items-center justify-center gap-3 p-5 rounded-[2rem] transition-all transform hover:scale-[1.02] active:scale-95 border-2 border-dashed shadow-xl ${
+                      timeLeft === 0 
+                      ? 'border-red-500 bg-red-500/10 text-red-500 animate-bounce' 
+                      : 'border-slate-500 hover:border-yellow-400 text-slate-400 hover:text-yellow-400 bg-slate-800/40'
+                    }`}
+                  >
+                    <Eye className="w-10 h-10 transition-transform group-hover:scale-110" />
+                    <span className="font-black tracking-widest text-lg uppercase italic">揭曉答案</span>
                   </button>
                 ) : (
-                  <div className="flex-1 bg-amber-500/10 border border-amber-500/20 rounded-3xl flex items-center justify-center p-8 animate-in fade-in">
-                    <PartyPopper className="w-16 h-16 text-amber-400 animate-pulse" />
+                  <div className="flex-1 bg-yellow-400 rounded-[2rem] flex flex-col items-center justify-center p-6 animate-in zoom-in duration-300 shadow-lg">
+                    <PartyPopper className="w-14 h-14 text-slate-900 animate-bounce" />
+                    <span className="text-slate-900 font-black text-[9px] tracking-tighter uppercase mt-1">Confirmed!</span>
                   </div>
                 )}
 
-                <button onClick={handleNext} className="bg-white hover:bg-amber-50 text-slate-900 p-8 rounded-3xl font-black text-2xl transition-all transform hover:translate-x-2 active:scale-95 shadow-2xl flex items-center justify-center gap-3 border-b-8 border-slate-300 active:border-b-0 active:translate-y-2 group">
-                  {currentIdx === QUIZ_DATA.length - 1 ? "遊戲結束" : "下一題"}
-                  <ChevronRight className="w-8 h-8 group-hover:translate-x-1 transition-transform" />
+                {/* 下一題按鈕 */}
+                <button 
+                  onClick={handleNext}
+                  className="bg-white hover:bg-yellow-50 text-slate-900 p-6 rounded-[2rem] font-black text-xl transition-all transform hover:translate-x-1 active:scale-95 shadow-lg flex items-center justify-center gap-2 border-b-[6px] border-slate-300 active:border-b-0 active:translate-y-1"
+                >
+                  {currentIdx === QUIZ_DATA.length - 1 ? "結束" : "下一題"}
+                  <ChevronRight className="w-6 h-6" />
                 </button>
               </div>
+
             </div>
           )}
 
           {gameState === 'end' && (
-            <div className="text-center py-20 space-y-10 animate-in zoom-in duration-700">
-              <Trophy className="w-40 h-40 text-amber-400 mx-auto drop-shadow-2xl" />
-              <h2 className="text-6xl font-black text-white mb-6 tracking-tighter">尾牙挑戰大成功！</h2>
-              <button onClick={startGame} className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-900 px-16 py-6 rounded-[2rem] font-black text-3xl transition-all shadow-2xl active:scale-95">
-                重新開始
+            <div className="text-center py-20 animate-in zoom-in duration-700">
+              <Trophy className="w-36 h-36 text-yellow-400 mx-auto drop-shadow-[0_0_30px_rgba(250,204,21,0.5)] mb-6" />
+              <h2 className="text-5xl font-black text-white mb-4 italic">尾牙挑戰圓滿成功！</h2>
+              <p className="text-slate-400 text-xl mb-10 opacity-80">祝大家明年好運龍總來，加薪升官！</p>
+              <button 
+                onClick={startGame}
+                className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-14 py-5 rounded-[2rem] font-black text-2xl transition-all shadow-xl active:scale-95"
+              >
+                再來一局
               </button>
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-8 text-slate-500 font-bold text-[9px] tracking-[0.4em] uppercase opacity-30 text-center">
+        Emoji Guess Master v2.6 | Optimized Layout | Right-Hand Control
       </div>
     </div>
   );
