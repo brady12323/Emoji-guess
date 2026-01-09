@@ -1,303 +1,249 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  Trophy, 
-  Eye, 
-  PartyPopper, 
-  Volume2, 
-  VolumeX, 
-  Music, 
-  ChevronRight, 
-  Lightbulb,
-  Gamepad2
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 尾牙 EMOJI 大挑戰</title>
+    
+    <!-- 1. 樣式與圖標庫 (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-// 遊戲題目設定
-const QUIZ_DATA = [
-  { emojis: "🦁👑", answer: "獅子王", category: "電影" },
-  { emojis: "🍎🏢", answer: "蘋果公司 (Apple)", category: "品牌" },
-  { emojis: "☕️⭐", answer: "星巴克 (Starbucks)", category: "品牌" },
-  { emojis: "🌊🐢🐰", answer: "龜兔賽跑", category: "故事" },
-  { emojis: "❄️🏰👸", answer: "冰雪奇緣", category: "電影" },
-  { emojis: "🦶🏀", answer: "足球", category: "運動" },
-  { emojis: "👨‍🍳🐀", answer: "料理鼠王", category: "電影" },
-  { emojis: "🏹🍎", answer: "威廉·泰爾", category: "歷史/傳說" },
-  { emojis: "🐝🎬", answer: "蜂電影", category: "電影" },
-  { emojis: "🧧💰🧧", answer: "恭喜發財 / 紅包拿來", category: "尾牙必備" },
-  { emojis: "👻🐚", answer: "攻殼機動隊", category: "動漫/電影" },
-  { emojis: "👁️👄👁️", answer: "目瞪口呆", category: "成語" },
-  { emojis: "🐮🍺", answer: "牛逼", category: "流行語" },
-  { emojis: "🔋⚡🚗", answer: "特斯拉 (Tesla)", category: "品牌" },
-  { emojis: "🥤🔴⚪", answer: "可口可樂", category: "品牌" }
-];
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; margin: 0; overflow-x: hidden; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* 避免 Emoji 在某些瀏覽器過小 */
+        .emoji-display { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-const BGM_URL = "https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3";
+    <!-- 2. React 程式碼區塊 -->
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useRef } = React;
 
-/**
- * 輔助組件：安全圖標渲染
- */
-const SafeIcon = ({ icon: Icon, ...props }) => {
-  if (!Icon) return null;
-  return <Icon {...props} />;
-};
+        // 題目資料
+        const QUIZ_DATA = [
+            { emojis: "🦁👑", answer: "獅子王", category: "電影" },
+            { emojis: "🍎🏢", answer: "蘋果公司 (Apple)", category: "品牌" },
+            { emojis: "☕️⭐", answer: "星巴克 (Starbucks)", category: "品牌" },
+            { emojis: "🌊🐢🐰", answer: "龜兔賽跑", category: "故事" },
+            { emojis: "❄️🏰👸", answer: "冰雪奇緣", category: "電影" },
+            { emojis: "🦶🏀", answer: "足球", category: "運動" },
+            { emojis: "👨‍🍳🐀", answer: "料理鼠王", category: "電影" },
+            { emojis: "🏹🍎", answer: "威廉·泰爾", category: "歷史/傳說" },
+            { emojis: "🐝🎬", answer: "蜂電影", category: "電影" },
+            { emojis: "🧧💰🧧", answer: "恭喜發財 / 紅包拿來", category: "尾牙必備" },
+            { emojis: "👻🐚", answer: "攻殼機動隊", category: "動漫/電影" },
+            { emojis: "👁️👄👁️", answer: "目瞪口呆", category: "成語" },
+            { emojis: "🐮🍺", answer: "牛逼", category: "流行語" },
+            { emojis: "🔋⚡🚗", answer: "特斯拉 (Tesla)", category: "品牌" },
+            { emojis: "🥤🔴⚪", answer: "可口可樂", category: "品牌" }
+        ];
 
-const App = () => {
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(10);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [gameState, setGameState] = useState('start'); // start, playing, end
-  const [isMuted, setIsMuted] = useState(false);
-  const [audioStatus, setAudioStatus] = useState('loading');
-  
-  const audioRef = useRef(null);
-  const currentQuestion = QUIZ_DATA[currentIdx];
+        const BGM_URL = "https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3";
 
-  // 音訊初始化
-  useEffect(() => {
-    const audio = new Audio(BGM_URL);
-    audio.loop = true;
-    audio.volume = 0.4;
-    audio.oncanplaythrough = () => setAudioStatus('ready');
-    audio.onerror = () => setAudioStatus('error');
-    audioRef.current = audio;
+        // 圖標渲染組件
+        const Icon = ({ name, className = "w-6 h-6" }) => {
+            useEffect(() => { 
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
 
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, []);
+        const App = () => {
+            const [currentIdx, setCurrentIdx] = useState(0);
+            const [timeLeft, setTimeLeft] = useState(10);
+            const [showAnswer, setShowAnswer] = useState(false);
+            const [gameState, setGameState] = useState('start');
+            const [isMuted, setIsMuted] = useState(false);
+            
+            const audioRef = useRef(null);
+            const currentQuestion = QUIZ_DATA[currentIdx];
 
-  // 音訊播放邏輯
-  useEffect(() => {
-    if (!audioRef.current) return;
-    const shouldPlay = gameState === 'playing' && timeLeft > 0 && !showAnswer && !isMuted;
-    if (shouldPlay) {
-      audioRef.current.play().catch(() => {
-        // 處理瀏覽器自動播放限制
-        console.log("Waiting for user interaction to play audio");
-      });
-    } else {
-      audioRef.current.pause();
-    }
-  }, [gameState, timeLeft, showAnswer, isMuted]);
+            useEffect(() => {
+                const audio = new Audio(BGM_URL);
+                audio.loop = true;
+                audio.volume = 0.4;
+                audioRef.current = audio;
+                if (window.lucide) window.lucide.createIcons();
+                return () => { if (audioRef.current) audioRef.current.pause(); };
+            }, []);
 
-  // 計時器邏輯
-  useEffect(() => {
-    let timer;
-    if (gameState === 'playing' && timeLeft > 0 && !showAnswer) {
-      timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [timeLeft, gameState, showAnswer]);
+            useEffect(() => {
+                if (!audioRef.current) return;
+                // 狀態改變時決定是否播放
+                const shouldPlay = gameState === 'playing' && timeLeft > 0 && !showAnswer && !isMuted;
+                if (shouldPlay) {
+                    audioRef.current.play().catch(() => {
+                        console.log("等待使用者互動以播放音效");
+                    });
+                } else {
+                    audioRef.current.pause();
+                }
+            }, [gameState, timeLeft, showAnswer, isMuted]);
 
-  const handleNext = useCallback(() => {
-    if (currentIdx < QUIZ_DATA.length - 1) {
-      setCurrentIdx(prev => prev + 1);
-      setTimeLeft(10);
-      setShowAnswer(false);
-      if (audioRef.current) audioRef.current.currentTime = 0;
-    } else {
-      setGameState('end');
-    }
-  }, [currentIdx]);
+            useEffect(() => {
+                let timer;
+                if (gameState === 'playing' && timeLeft > 0 && !showAnswer) {
+                    timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+                }
+                return () => clearInterval(timer);
+            }, [timeLeft, gameState, showAnswer]);
 
-  const startGame = () => {
-    setGameState('playing');
-    setCurrentIdx(0);
-    setTimeLeft(10);
-    setShowAnswer(false);
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
-  };
+            const handleNext = () => {
+                if (currentIdx < QUIZ_DATA.length - 1) {
+                    setCurrentIdx(prev => prev + 1);
+                    setTimeLeft(10);
+                    setShowAnswer(false);
+                    // 切換下一題時，重置音樂進度
+                    if (audioRef.current) {
+                        audioRef.current.currentTime = 0;
+                    }
+                } else {
+                    setGameState('end');
+                }
+            };
 
-  const revealAnswer = () => {
-    setShowAnswer(true);
-    if (audioRef.current) audioRef.current.pause();
-  };
+            const startGame = () => {
+                setGameState('playing');
+                setCurrentIdx(0);
+                setTimeLeft(10);
+                setShowAnswer(false);
+                if (audioRef.current) audioRef.current.currentTime = 0;
+            };
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
+            const progressPercentage = (timeLeft / 10) * 100;
 
-  const progressPercentage = (timeLeft / 10) * 100;
-
-  return (
-    <div className="min-h-screen bg-[#0f172a] text-white font-sans flex flex-col items-center justify-center p-4 selection:bg-yellow-400 selection:text-slate-900">
-      {/* 背景裝飾光暈 */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-30">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600 rounded-full blur-[150px]"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-600 rounded-full blur-[150px]"></div>
-      </div>
-
-      <div className="z-10 w-full max-w-6xl bg-[#1e293b]/90 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
-        
-        {/* 頂部控制欄 */}
-        <div className="bg-[#334155] p-5 flex items-center justify-between px-8 border-b border-white/5">
-          <div className="flex items-center gap-4">
-            <div className="bg-yellow-400 p-1.5 rounded-lg shadow-lg">
-              <SafeIcon icon={PartyPopper} className="w-6 h-6 text-slate-900" />
-            </div>
-            <h1 className="text-xl font-black tracking-tight text-white">2026 尾牙 EMOJI 大挑戰</h1>
-          </div>
-          
-          <button 
-            onClick={toggleMute}
-            className={`flex items-center gap-2 p-2.5 rounded-xl transition-all ${isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-slate-700 text-white hover:bg-slate-600'}`}
-          >
-            <SafeIcon icon={isMuted ? VolumeX : Volume2} className="w-5 h-5" />
-            <span className="text-[10px] font-bold hidden md:block uppercase tracking-tighter">
-              {isMuted ? "靜音模式" : "音效開啟"}
-            </span>
-          </button>
-        </div>
-
-        <div className="p-6 md:p-8">
-          {/* 開始畫面 */}
-          {gameState === 'start' && (
-            <div className="text-center py-24 flex flex-col items-center animate-in fade-in duration-1000">
-              <div className="text-[10rem] mb-12 animate-bounce drop-shadow-[0_0_40px_rgba(250,204,21,0.5)]">🎁</div>
-              <h2 className="text-4xl font-black mb-10 text-white tracking-tight">準備好拿大獎了嗎？</h2>
-              <button 
-                onClick={startGame}
-                className="group relative bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-14 py-6 rounded-[2rem] text-2xl font-black transition-all transform hover:scale-105 shadow-xl active:scale-95 flex items-center gap-4"
-              >
-                <SafeIcon icon={Gamepad2} className={`w-7 h-7 ${audioStatus === 'ready' ? 'animate-pulse' : ''}`} />
-                點擊開始挑戰
-              </button>
-            </div>
-          )}
-
-          {/* 遊戲進行中 */}
-          {gameState === 'playing' && (
-            <div className="flex flex-col lg:flex-row gap-6 items-stretch">
-              
-              {/* 左側：大題目區域 */}
-              <div className="flex-[3] min-w-0">
-                <div className="bg-[#0f172a] rounded-[2.5rem] p-8 text-center border border-white/10 h-[520px] flex flex-col items-center justify-center relative shadow-2xl group overflow-hidden">
-                  
-                  {/* 分類提示 */}
-                  <div className="absolute top-6 left-6 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-1.5 rounded-xl shadow-lg border border-blue-400/30">
-                    <SafeIcon icon={Lightbulb} className="w-4 h-4 text-yellow-300 animate-pulse" />
-                    <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest opacity-80">提示：</span>
-                    <span className="text-sm font-black text-white">
-                      {currentQuestion.category}
-                    </span>
-                  </div>
-
-                  {/* 題目 Emoji */}
-                  <div className="w-full flex items-center justify-center py-4">
-                    <div className="text-[clamp(4rem,15vw,11rem)] leading-none select-none transition-all duration-700 group-hover:scale-110 drop-shadow-[0_25px_40px_rgba(0,0,0,0.8)] whitespace-nowrap inline-block">
-                      {currentQuestion.emojis}
+            return (
+                <div className="min-h-screen text-white flex flex-col items-center justify-center p-4">
+                    <div className="fixed inset-0 overflow-hidden pointer-events-none opacity-20">
+                        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[120px]"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600 rounded-full blur-[120px]"></div>
                     </div>
-                  </div>
-                  
-                  {/* 答案顯示區 */}
-                  <div className="h-28 flex items-center justify-center w-full mt-4">
-                    {showAnswer && (
-                      <div className="animate-in fade-in zoom-in slide-in-from-bottom-6 duration-700 text-center">
-                        <div className="text-yellow-400 text-[10px] font-black tracking-[0.4em] uppercase mb-1 opacity-70 italic">Correct Answer</div>
-                        <div className="text-6xl font-black text-white bg-gradient-to-t from-yellow-500 to-yellow-100 bg-clip-text text-transparent drop-shadow-md px-8 py-2 border-b-2 border-yellow-500/20">
-                          {currentQuestion.answer}
+
+                    <div className="z-10 w-full max-w-5xl bg-slate-800/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
+                        <div className="bg-slate-700/50 p-6 flex items-center justify-between px-10 border-b border-white/5">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-yellow-400 p-2 rounded-xl">
+                                    <Icon name="party-popper" className="w-6 h-6 text-slate-900" />
+                                </div>
+                                <h1 className="text-2xl font-black italic tracking-tighter">2026 EMOJI CHALLENGE</h1>
+                            </div>
+                            <button onClick={() => setIsMuted(!isMuted)} className="p-3 bg-slate-600 rounded-2xl hover:bg-slate-500 transition-colors">
+                                <Icon name={isMuted ? "volume-x" : "volume-2"} className={`w-6 h-6 ${isMuted ? 'text-red-400' : 'text-white'}`} />
+                            </button>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              {/* 右側：主控區 */}
-              <div className="lg:w-72 flex flex-col gap-4">
-                
-                {/* 倒數計時卡片 */}
-                <div className="bg-[#334155]/80 rounded-[2rem] p-5 border border-white/5 shadow-lg">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="bg-slate-800 px-3 py-1 rounded-lg">
-                      <span className="text-[9px] text-slate-400 font-bold block leading-none">ROUND</span>
-                      <span className="text-base font-black italic">{currentIdx + 1} / {QUIZ_DATA.length}</span>
+                        <div className="p-10">
+                            {gameState === 'start' && (
+                                <div className="text-center py-20 animate-fade-in flex flex-col items-center">
+                                    <div className="text-[10rem] mb-10 drop-shadow-2xl animate-bounce">🎁</div>
+                                    <h2 className="text-5xl font-black mb-12 tracking-tight">尾牙大獎，誰是贏家？</h2>
+                                    <button onClick={startGame} className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-16 py-6 rounded-full text-3xl font-black transition-all shadow-xl hover:scale-105 active:scale-95 transform">
+                                        點擊開始
+                                    </button>
+                                </div>
+                            )}
+
+                            {gameState === 'playing' && (
+                                <div className="flex flex-col lg:flex-row gap-8">
+                                    <div className="flex-[3] bg-slate-900/50 rounded-[3rem] p-10 h-[500px] flex flex-col items-center justify-between relative border border-white/5 shadow-inner">
+                                        
+                                        {/* 上方：提示區 */}
+                                        <div className="w-full flex justify-start">
+                                            <div className="bg-blue-600 px-6 py-2 rounded-2xl text-sm font-bold shadow-lg flex items-center gap-2">
+                                                <Icon name="lightbulb" className="w-4 h-4 text-yellow-300" />
+                                                <span>提示：{currentQuestion.category}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* 中間：Emoji 顯示區 */}
+                                        {/* 修改：加入 whitespace-nowrap 強制不換行 */}
+                                        <div className="flex-1 flex items-center justify-center w-full overflow-hidden">
+                                            <div className="emoji-display whitespace-nowrap text-[clamp(4rem,12vw,10rem)] drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] select-none leading-none text-center px-4">
+                                                {currentQuestion.emojis}
+                                            </div>
+                                        </div>
+
+                                        {/* 下方：答案區 (固定高度確保不跳動) */}
+                                        <div className="h-32 w-full flex items-end justify-center pb-4">
+                                            {showAnswer && (
+                                                <div className="text-center animate-fade-in w-full">
+                                                    <div className="text-yellow-400 text-xs font-bold tracking-[0.3em] uppercase mb-2 opacity-60">Answer</div>
+                                                    <div className="text-5xl md:text-6xl font-black text-white bg-gradient-to-b from-yellow-300 to-yellow-500 bg-clip-text text-transparent drop-shadow-lg px-4">
+                                                        {currentQuestion.answer}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="lg:w-80 flex flex-col gap-5">
+                                        <div className="bg-slate-700/30 p-8 rounded-[2.5rem] border border-white/5 text-center shadow-lg">
+                                            <div className="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">Question</div>
+                                            <div className="text-2xl font-black italic">{currentIdx + 1} / {QUIZ_DATA.length}</div>
+                                            <div className={`text-6xl font-black my-4 font-mono ${timeLeft <= 3 ? 'text-red-500 animate-pulse' : 'text-yellow-400'}`}>
+                                                {timeLeft}s
+                                            </div>
+                                            <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-white/5 shadow-inner">
+                                                <div className="h-full bg-yellow-400 transition-all duration-1000" style={{width: `${progressPercentage}%`}}></div>
+                                            </div>
+                                        </div>
+
+                                        {!showAnswer ? (
+                                            <button onClick={() => setShowAnswer(true)} className="flex-1 bg-slate-700/50 hover:bg-slate-600/50 border-2 border-dashed border-slate-500 hover:border-yellow-400 rounded-[2.5rem] flex flex-col items-center justify-center gap-3 transition-all group shadow-xl active:scale-95 transform">
+                                                <Icon name="eye" className="w-12 h-12 text-slate-500 group-hover:text-yellow-400" />
+                                                <span className="font-bold text-slate-400 group-hover:text-yellow-400">點擊揭曉</span>
+                                            </button>
+                                        ) : (
+                                            <div className="flex-1 bg-yellow-400 rounded-[2.5rem] flex items-center justify-center shadow-lg border-b-8 border-yellow-600">
+                                                <Icon name="party-popper" className="w-20 h-20 text-slate-900 animate-bounce" />
+                                            </div>
+                                        )}
+
+                                        <button 
+                                            onClick={handleNext}
+                                            disabled={!showAnswer && timeLeft > 0}
+                                            className={`p-7 rounded-[2.5rem] font-black text-2xl transition-all border-b-8 shadow-xl flex items-center justify-center gap-2 ${
+                                                showAnswer || timeLeft === 0 
+                                                ? 'bg-white text-slate-900 border-slate-300 hover:bg-yellow-50 active:translate-y-1 active:border-b-0' 
+                                                : 'bg-slate-700 text-slate-500 border-slate-800 opacity-50 cursor-not-allowed'
+                                            }`}
+                                        >
+                                            {currentIdx === QUIZ_DATA.length - 1 ? "結束挑戰" : "下一題"}
+                                            <Icon name="chevron-right" className="w-6 h-6" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {gameState === 'end' && (
+                                <div className="text-center py-20 animate-fade-in flex flex-col items-center">
+                                    <Icon name="trophy" className="w-40 h-40 text-yellow-400 mx-auto mb-10 drop-shadow-[0_0_30px_rgba(250,204,21,0.5)]" />
+                                    <h2 className="text-6xl font-black mb-6">挑戰成功！</h2>
+                                    <p className="text-slate-400 text-2xl mb-12">祝大家明年運勢爆發，獎金拿不完！</p>
+                                    <button onClick={startGame} className="bg-yellow-400 text-slate-900 px-20 py-6 rounded-full text-3xl font-black shadow-xl hover:bg-yellow-300 transition-all hover:scale-105 active:scale-95 transform">
+                                        重新開始
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div className="text-right">
-                       <div className={`text-4xl font-mono font-black ${timeLeft <= 3 ? 'text-red-500 animate-pulse' : 'text-yellow-400'}`}>
-                        {timeLeft}s
-                       </div>
-                    </div>
-                  </div>
-                  
-                  {/* 進度條 */}
-                  <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/5 shadow-inner">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-1000 ease-linear ${
-                        timeLeft > 5 ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : timeLeft > 0 ? 'bg-yellow-400 animate-pulse' : 'bg-red-600'
-                      }`}
-                      style={{ width: `${progressPercentage}%` }}
-                    ></div>
-                  </div>
                 </div>
+            );
+        };
 
-                {/* 動作按鈕 */}
-                <div className="flex-1 flex flex-col gap-4">
-                  {!showAnswer ? (
-                    <button 
-                      onClick={revealAnswer}
-                      className={`flex-1 flex flex-col items-center justify-center gap-3 p-5 rounded-[2rem] transition-all transform hover:scale-[1.02] active:scale-95 border-2 border-dashed shadow-xl ${
-                        timeLeft === 0 
-                        ? 'border-red-500 bg-red-500/10 text-red-500 animate-bounce' 
-                        : 'border-slate-500 hover:border-yellow-400 text-slate-400 hover:text-yellow-400 bg-slate-800/40'
-                      }`}
-                    >
-                      <SafeIcon icon={Eye} className="w-12 h-12" />
-                      <span className="font-black tracking-widest text-lg uppercase italic">揭曉答案</span>
-                    </button>
-                  ) : (
-                    <div className="flex-1 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-[2rem] flex flex-col items-center justify-center p-6 animate-in zoom-in duration-300 shadow-lg border-b-[6px] border-yellow-700">
-                      <SafeIcon icon={PartyPopper} className="w-16 h-16 text-slate-900 animate-bounce" />
-                      <span className="text-slate-900 font-black text-[10px] tracking-tighter uppercase mt-1">Ready for next?</span>
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={handleNext}
-                    disabled={!showAnswer && timeLeft > 0}
-                    className={`p-6 rounded-[2rem] font-black text-xl transition-all transform flex items-center justify-center gap-2 shadow-lg border-b-[6px] active:border-b-0 active:translate-y-1 ${
-                      showAnswer || timeLeft === 0
-                      ? 'bg-white hover:bg-yellow-50 text-slate-900 border-slate-300'
-                      : 'bg-slate-700 text-slate-500 border-slate-800 cursor-not-allowed'
-                    }`}
-                  >
-                    {currentIdx === QUIZ_DATA.length - 1 ? "遊戲結束" : "下一題"}
-                    <SafeIcon icon={ChevronRight} className="w-6 h-6" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 結算畫面 */}
-          {gameState === 'end' && (
-            <div className="text-center py-20 animate-in zoom-in duration-700">
-              <SafeIcon icon={Trophy} className="w-40 h-40 text-yellow-400 mx-auto drop-shadow-[0_0_30px_rgba(250,204,21,0.5)] mb-8" />
-              <h2 className="text-5xl font-black text-white mb-4 italic tracking-tighter">尾牙挑戰圓滿成功！</h2>
-              <p className="text-slate-400 text-xl mb-12 opacity-80">祝大家明年運勢如虹，年終拿到手軟！</p>
-              <button 
-                onClick={startGame}
-                className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 px-16 py-6 rounded-[2.5rem] font-black text-2xl transition-all shadow-xl active:scale-95 transform hover:scale-105"
-              >
-                再來一局
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-8 text-slate-500 font-bold text-[9px] tracking-[0.4em] uppercase opacity-30 text-center">
-        Emoji Guess Master Pro v3.0 | 尾牙專用佈局 | Optimized for Performance
-      </div>
-    </div>
-  );
-};
-
-export default App;
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
